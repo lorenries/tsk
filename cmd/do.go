@@ -25,7 +25,7 @@ var doCmd = &coral.Command{
 		}
 
 		for _, key := range complete {
-			err := db.MarkDone(key)
+			_, err := db.MarkDone(key)
 			if err != nil {
 				panic(err)
 			}

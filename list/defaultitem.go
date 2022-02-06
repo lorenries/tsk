@@ -101,12 +101,17 @@ type DefaultItem interface {
 // ItemDelegate called, which is called when the list's Update function is
 // invoked.
 //
+// Setting RenderFunc is optional. If it's set it will be called when the
+// ItemDelegate is called, which is called when the list's Render function is
+// invoked and allows you to customize how list items are rendered.
+//
 // Settings ShortHelpFunc and FullHelpFunc is optional. They can can be set to
 // include items in the list's default short and full help menus.
 type DefaultDelegate struct {
 	ShowDescription bool
 	Styles          DefaultItemStyles
 	UpdateFunc      func(tea.Msg, *Model) tea.Cmd
+	RenderFunc      func(w io.Writer, m Model, index int, item Item)
 	ShortHelpFunc   func() []key.Binding
 	FullHelpFunc    func() [][]key.Binding
 	spacing         int
@@ -149,6 +154,11 @@ func (d DefaultDelegate) Update(msg tea.Msg, m *Model) tea.Cmd {
 
 // Render prints an item.
 func (d DefaultDelegate) Render(w io.Writer, m Model, index int, item Item) {
+	if d.RenderFunc != nil {
+		d.RenderFunc(w, m, index, item)
+		return
+	}
+
 	var (
 		title, desc  string
 		matchedRunes []int

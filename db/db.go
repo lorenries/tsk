@@ -122,14 +122,14 @@ func ActiveTasks() ([]Task, error) {
 	return list(active)
 }
 
-func updateStatus(key int, s status) error {
-	return db.Update(func(t *bolt.Tx) error {
+func updateStatus(key int, s status) (Task, error) {
+	task := Task{}
+	return task, db.Update(func(t *bolt.Tx) error {
 		b := t.Bucket(taskBucket)
 		id := itob(key)
 		value := b.Get(id)
 
 		if value != nil {
-			task := Task{}
 			err := json.Unmarshal(value, &task)
 			if err != nil {
 				return err
@@ -156,11 +156,11 @@ func updateStatus(key int, s status) error {
 	})
 }
 
-func MarkDone(key int) error {
+func MarkDone(key int) (Task, error) {
 	return updateStatus(key, done)
 }
 
-func MarkActive(key int) error {
+func MarkActive(key int) (Task, error) {
 	return updateStatus(key, active)
 }
 
