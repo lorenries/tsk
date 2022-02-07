@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io"
 	"tsk/db"
-	"tsk/list"
 
-	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/lorenries/bubbles/key"
+	"github.com/lorenries/bubbles/list"
 	"github.com/mergestat/timediff"
 	"github.com/muesli/reflow/truncate"
 )

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 	"tsk/db"
-	"tsk/list"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/lorenries/bubbles/key"
+	"github.com/lorenries/bubbles/list"
+	"github.com/lorenries/bubbles/textinput"
 )
 
 var (
