@@ -2,10 +2,12 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"tsk/db"
 	"tsk/list"
 
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -21,34 +23,29 @@ var (
 	statusMessageStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
 				Render
+
+	addInputStyle = lipgloss.NewStyle().Padding(0, 0, 1, 2)
+
+	addCursor = lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"})
+
+	addPrompt = lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"})
 )
 
 type listKeyMap struct {
-	toggleSpinner    key.Binding
-	toggleTitleBar   key.Binding
-	toggleStatusBar  key.Binding
-	togglePagination key.Binding
-	toggleHelpMenu   key.Binding
-	insertItem       key.Binding
+	togglePagination  key.Binding
+	toggleHelpMenu    key.Binding
+	addItem           key.Binding
+	cancelWhileAdding key.Binding
+	acceptWhileAdding key.Binding
 }
 
 func newListKeyMap() *listKeyMap {
 	return &listKeyMap{
-		insertItem: key.NewBinding(
+		addItem: key.NewBinding(
 			key.WithKeys("a"),
 			key.WithHelp("a", "add item"),
-		),
-		toggleSpinner: key.NewBinding(
-			key.WithKeys("s"),
-			key.WithHelp("s", "toggle spinner"),
-		),
-		toggleTitleBar: key.NewBinding(
-			key.WithKeys("T"),
-			key.WithHelp("T", "toggle title"),
-		),
-		toggleStatusBar: key.NewBinding(
-			key.WithKeys("S"),
-			key.WithHelp("S", "toggle status"),
 		),
 		togglePagination: key.NewBinding(
 			key.WithKeys("P"),
@@ -58,16 +55,107 @@ func newListKeyMap() *listKeyMap {
 			key.WithKeys("H"),
 			key.WithHelp("H", "toggle help"),
 		),
+		cancelWhileAdding: key.NewBinding(
+			key.WithKeys("esc"),
+			key.WithHelp("esc", "cancel"),
+		),
+		acceptWhileAdding: key.NewBinding(
+			key.WithKeys("enter"),
+		),
 	}
 }
 
-type Model struct {
-	list         list.Model
-	keys         *listKeyMap
-	delegateKeys *delegateKeyMap
+type model struct {
+	list          list.Model
+	keys          *listKeyMap
+	delegate      list.DefaultDelegate
+	delegateKeys  *delegateKeyMap
+	addInput      textinput.Model
+	showAddInput  bool
+	width, height int
 }
 
-func NewModel(tasks []db.Task) Model {
+func (m *model) setShowAddInput(b bool) bool {
+	m.showAddInput = b
+	m.list.SetShowTitle(!b)
+	m.list.SetShowFilter(!b)
+	m.list.SetFilteringEnabled(!b)
+	if b {
+		m.addInput.CursorEnd()
+		m.addInput.Focus()
+	}
+	m.updateKeybindings()
+	return m.showAddInput
+}
+
+func (m *model) setSize(width int, height int) (int, int) {
+	m.width = width
+	m.height = height
+	return m.width, m.height
+}
+
+func (m *model) updateKeybindings() {
+	switch m.showAddInput {
+	case true:
+		m.keys.cancelWhileAdding.SetEnabled(true)
+		m.keys.addItem.SetEnabled(false)
+		m.delegateKeys.remove.SetEnabled(false)
+		m.delegateKeys.complete.SetEnabled(false)
+		m.list.KeyMap.ShowFullHelp.SetEnabled(false)
+		m.list.KeyMap.CloseFullHelp.SetEnabled(false)
+		m.list.KeyMap.Quit.SetEnabled(false)
+		m.list.KeyMap.CursorUp.SetEnabled(false)
+		m.list.KeyMap.CursorDown.SetEnabled(false)
+		m.list.KeyMap.PrevPage.SetEnabled(false)
+		m.list.KeyMap.NextPage.SetEnabled(false)
+		m.list.KeyMap.GoToStart.SetEnabled(false)
+		m.list.KeyMap.GoToEnd.SetEnabled(false)
+	default:
+		m.keys.cancelWhileAdding.SetEnabled(false)
+		m.keys.addItem.SetEnabled(true)
+		m.delegateKeys.remove.SetEnabled(true)
+		m.delegateKeys.complete.SetEnabled(true)
+		m.list.KeyMap.ShowFullHelp.SetEnabled(true)
+		m.list.KeyMap.CloseFullHelp.SetEnabled(true)
+		m.list.KeyMap.Quit.SetEnabled(true)
+		m.list.KeyMap.CursorUp.SetEnabled(true)
+		m.list.KeyMap.CursorDown.SetEnabled(true)
+		m.list.KeyMap.PrevPage.SetEnabled(true)
+		m.list.KeyMap.NextPage.SetEnabled(true)
+		m.list.KeyMap.GoToStart.SetEnabled(true)
+		m.list.KeyMap.GoToEnd.SetEnabled(true)
+	}
+}
+
+func (m *model) handleAdding(msg tea.Msg) tea.Cmd {
+	var cmds []tea.Cmd
+
+	if msg, ok := msg.(tea.KeyMsg); ok {
+		switch {
+		case key.Matches(msg, m.keys.cancelWhileAdding):
+			m.setShowAddInput(false)
+			m.keys.addItem.SetEnabled(true)
+			m.keys.cancelWhileAdding.SetEnabled(false)
+		case key.Matches(msg, m.keys.acceptWhileAdding):
+			newItem, err := db.CreateTask(m.addInput.Value())
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			m.list.InsertItem(0, newItem)
+			m.setShowAddInput(false)
+			return m.list.NewStatusMessage(statusMessageStyle("Added " + "\"" + newItem.Value + "\""))
+		}
+	}
+
+	newAddInput, inputCmd := m.addInput.Update(msg)
+	m.addInput = newAddInput
+	cmds = append(cmds, inputCmd)
+
+	return tea.Batch(cmds...)
+}
+
+func NewModel(tasks []db.Task) model {
 	var (
 		delegateKeys = newDelegateKeyMap()
 		listKeys     = newListKeyMap()
@@ -78,8 +166,6 @@ func NewModel(tasks []db.Task) Model {
 		items = append(items, task)
 	}
 
-	fmt.Println(len(items), len(tasks))
-
 	// Setup list
 	delegate := newItemDelegate(delegateKeys)
 	taskList := list.New(items, delegate, 0, 0)
@@ -87,33 +173,39 @@ func NewModel(tasks []db.Task) Model {
 	taskList.Styles.Title = titleStyle
 	taskList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
-			listKeys.toggleSpinner,
-			listKeys.insertItem,
-			listKeys.toggleTitleBar,
-			listKeys.toggleStatusBar,
+			listKeys.addItem,
 			listKeys.togglePagination,
 			listKeys.toggleHelpMenu,
 		}
 	}
 
-	return Model{
+	addInput := textinput.New()
+	addInput.Prompt = "Add: "
+	addInput.PromptStyle = addPrompt
+	addInput.CursorStyle = addCursor
+	addInput.Focus()
+
+	return model{
 		list:         taskList,
+		addInput:     addInput,
 		keys:         listKeys,
 		delegateKeys: delegateKeys,
+		delegate:     delegate,
 	}
 }
 
-func (m Model) Init() tea.Cmd {
-	return tea.EnterAltScreen
+func (m model) Init() tea.Cmd {
+	return nil
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		topGap, rightGap, bottomGap, leftGap := appStyle.GetPadding()
-		m.list.SetSize(msg.Width-leftGap-rightGap, msg.Height-topGap-bottomGap)
+		w, h := m.setSize(msg.Width-leftGap-rightGap, msg.Height-topGap-bottomGap)
+		m.list.SetSize(w, h)
 
 	case tea.KeyMsg:
 		// Don't match any of the keys below if we're actively filtering.
@@ -122,21 +214,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch {
-		case key.Matches(msg, m.keys.toggleSpinner):
-			cmd := m.list.ToggleSpinner()
-			return m, cmd
-
-		case key.Matches(msg, m.keys.toggleTitleBar):
-			v := !m.list.ShowTitle()
-			m.list.SetShowTitle(v)
-			m.list.SetShowFilter(v)
-			m.list.SetFilteringEnabled(v)
-			return m, nil
-
-		case key.Matches(msg, m.keys.toggleStatusBar):
-			m.list.SetShowStatusBar(!m.list.ShowStatusBar())
-			return m, nil
-
 		case key.Matches(msg, m.keys.togglePagination):
 			m.list.SetShowPagination(!m.list.ShowPagination())
 			return m, nil
@@ -145,28 +222,37 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetShowHelp(!m.list.ShowHelp())
 			return m, nil
 
-			// TODO: update this to actually add a new item to the list
-			// case key.Matches(msg, m.keys.insertItem):
-			// 	m.delegateKeys.remove.SetEnabled(true)
-			// 	newItem, err := db.CreateTask("asdf")
-			// 	if err != nil {
-			// 		fmt.Println(err)
-			// 		os.Exit(1)
-			// 	}
-			// 	insCmd := m.list.InsertItem(0, newItem)
-			// 	statusCmd := m.list.NewStatusMessage(statusMessageStyle("Added " + newItem.Value))
-			// 	return m, tea.Batch(insCmd, statusCmd)
+		// TODO: update this to actually add a new item to the list
+		case key.Matches(msg, m.keys.addItem):
+			m.setShowAddInput(true)
+			return m, textinput.Blink
 		}
 	}
 
 	// This will also call our delegate's update function.
-	newListModel, cmd := m.list.Update(msg)
-	m.list = newListModel
-	cmds = append(cmds, cmd)
+	if m.showAddInput {
+		cmds = append(cmds, m.handleAdding(msg))
+	} else {
+		newListModel, cmd := m.list.Update(msg)
+		m.list = newListModel
+		cmds = append(cmds, cmd)
+	}
 
 	return m, tea.Batch(cmds...)
 }
 
-func (m Model) View() string {
-	return appStyle.Render(m.list.View())
+func (m model) View() string {
+	var (
+		sections []string
+	)
+
+	if m.showAddInput {
+		v := addInputStyle.Render(m.addInput.View())
+		sections = append(sections, v)
+		m.list.SetHeight(m.height - lipgloss.Height(v))
+	}
+
+	sections = append(sections, m.list.View())
+
+	return appStyle.Render(lipgloss.JoinVertical(lipgloss.Left, sections...))
 }

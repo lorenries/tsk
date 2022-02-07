@@ -69,6 +69,14 @@ func CreateTask(t string) (Task, error) {
 	return task, nil
 }
 
+func DeleteTask(key int) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(taskBucket)
+		id := itob(key)
+		return b.Delete(id)
+	})
+}
+
 type status int
 
 const (

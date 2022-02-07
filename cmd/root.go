@@ -19,7 +19,7 @@ var rootCmd = &coral.Command{
 			panic(err)
 		}
 		m := app.NewModel(tasks)
-		program := tea.NewProgram(m)
+		program := tea.NewProgram(m, tea.WithAltScreen())
 		if err := program.Start(); err != nil {
 			fmt.Printf("Alas, there's been an error: %v", err)
 			os.Exit(1)

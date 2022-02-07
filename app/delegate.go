@@ -131,13 +131,21 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 					status = statusMessageStyle("Completed: " + fmt.Sprintf("\"%s\"", task.Value) + " 🎉")
 				}
 				if err != nil {
-					m.NewStatusMessage("Error marking task as complete")
+					return m.NewStatusMessage("Error marking task as complete")
 				}
 				m.SetItem(m.Index(), task)
 				return m.NewStatusMessage(status)
 
 			case key.Matches(msg, keys.remove):
 				index := m.Index()
+				task, ok := m.SelectedItem().(db.Task)
+				if !ok {
+					return nil
+				}
+				err := db.DeleteTask(task.Key)
+				if err != nil {
+					return m.NewStatusMessage("Error deleting task")
+				}
 				m.RemoveItem(index)
 				if len(m.Items()) == 0 {
 					keys.remove.SetEnabled(false)
@@ -194,8 +202,8 @@ func newDelegateKeyMap() *delegateKeyMap {
 			key.WithHelp("enter", "toggle complete"),
 		),
 		remove: key.NewBinding(
-			key.WithKeys("x", "backspace"),
-			key.WithHelp("x", "delete"),
+			key.WithKeys("d", "backspace"),
+			key.WithHelp("d", "delete"),
 		),
 	}
 }
