@@ -238,7 +238,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetShowHelp(!m.list.ShowHelp())
 			return m, nil
 
-		// TODO: update this to actually add a new item to the list
 		case key.Matches(msg, m.keys.addItem):
 			m.setShowAddInput(true)
 			return m, textinput.Blink
