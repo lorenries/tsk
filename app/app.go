@@ -61,6 +61,7 @@ func newListKeyMap() *listKeyMap {
 		),
 		acceptWhileAdding: key.NewBinding(
 			key.WithKeys("enter"),
+			key.WithHelp("enter", "add task"),
 		),
 	}
 }
@@ -68,7 +69,7 @@ func newListKeyMap() *listKeyMap {
 type model struct {
 	list          list.Model
 	keys          *listKeyMap
-	delegate      list.DefaultDelegate
+	delegate      *itemDelegate
 	delegateKeys  *delegateKeyMap
 	addInput      textinput.Model
 	showAddInput  bool
@@ -84,6 +85,7 @@ func (m *model) setShowAddInput(b bool) bool {
 		m.addInput.CursorEnd()
 		m.addInput.Focus()
 	}
+	m.delegate.SetIsAdding(b)
 	m.updateKeybindings()
 	return m.showAddInput
 }
@@ -98,7 +100,9 @@ func (m *model) updateKeybindings() {
 	switch m.showAddInput {
 	case true:
 		m.keys.cancelWhileAdding.SetEnabled(true)
+		m.keys.acceptWhileAdding.SetEnabled(true)
 		m.keys.addItem.SetEnabled(false)
+		m.keys.togglePagination.SetEnabled(false)
 		m.delegateKeys.remove.SetEnabled(false)
 		m.delegateKeys.complete.SetEnabled(false)
 		m.list.KeyMap.ShowFullHelp.SetEnabled(false)
@@ -112,7 +116,9 @@ func (m *model) updateKeybindings() {
 		m.list.KeyMap.GoToEnd.SetEnabled(false)
 	default:
 		m.keys.cancelWhileAdding.SetEnabled(false)
+		m.keys.acceptWhileAdding.SetEnabled(false)
 		m.keys.addItem.SetEnabled(true)
+		m.keys.togglePagination.SetEnabled(true)
 		m.delegateKeys.remove.SetEnabled(true)
 		m.delegateKeys.complete.SetEnabled(true)
 		m.list.KeyMap.ShowFullHelp.SetEnabled(true)
@@ -157,7 +163,7 @@ func (m *model) handleAdding(msg tea.Msg) tea.Cmd {
 
 func NewModel(tasks []db.Task) model {
 	var (
-		delegateKeys = newDelegateKeyMap()
+		delegateKeys = delegateKeys
 		listKeys     = newListKeyMap()
 	)
 
@@ -167,7 +173,7 @@ func NewModel(tasks []db.Task) model {
 	}
 
 	// Setup list
-	delegate := newItemDelegate(delegateKeys)
+	delegate := &itemDelegate{}
 	taskList := list.New(items, delegate, 0, 0)
 	taskList.Title = "Todos"
 	taskList.Styles.Title = titleStyle
@@ -176,6 +182,14 @@ func NewModel(tasks []db.Task) model {
 			listKeys.addItem,
 			listKeys.togglePagination,
 			listKeys.toggleHelpMenu,
+		}
+	}
+	listKeys.cancelWhileAdding.SetEnabled(false)
+	listKeys.acceptWhileAdding.SetEnabled(false)
+	taskList.AdditionalShortHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			listKeys.cancelWhileAdding,
+			listKeys.acceptWhileAdding,
 		}
 	}
 
