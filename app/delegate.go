@@ -31,9 +31,12 @@ var (
 			Padding(0, 0, 0, 1)
 	dimmedDesc = dimmedTitle.Copy().
 			Foreground(lipgloss.AdaptiveColor{Light: "#C2B8C2", Dark: "#4D4D4D"})
-	selectedItemStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("170"))
-	timeAddedStyle    = lipgloss.NewStyle().PaddingLeft(5).Faint(true).Render
-	filterMatch       = lipgloss.NewStyle().Underline(true)
+	selectedItemStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("170"))
+	timeAddedStyle      = lipgloss.NewStyle().PaddingLeft(5).Faint(true).Render
+	filterMatch         = lipgloss.NewStyle().Underline(true)
+	deletedMessageStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}).
+				Render
 )
 
 type delegateKeyMap struct {
@@ -198,7 +201,7 @@ func (d itemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd {
 			if len(m.Items()) == 0 {
 				delegateKeys.remove.SetEnabled(false)
 			}
-			return m.NewStatusMessage(statusMessageStyle("Deleted " + fmt.Sprintf("\"%s\"", task.Value)))
+			return m.NewStatusMessage(deletedMessageStyle("Deleted " + fmt.Sprintf("\"%s\"", task.Value)))
 		}
 	}
 
