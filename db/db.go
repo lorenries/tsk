@@ -11,6 +11,7 @@ import (
 var (
 	db         *bolt.DB
 	taskBucket = []byte("tasks")
+	tagBucket  = []byte("tags")
 )
 
 type Task struct {
@@ -18,6 +19,16 @@ type Task struct {
 	Value     string    `json:"value"`
 	TimeAdded time.Time `json:"timeAdded"`
 	Completed bool      `json:"completed"`
+}
+
+type Tag struct {
+	Key   int    `json:"key"`
+	Value string `json:"value"`
+	Tasks []int  `json:"tasks"`
+}
+
+func (t *Tag) AddTask(id int) {
+	t.Tasks = append(t.Tasks, id)
 }
 
 func (t Task) FilterValue() string {
@@ -38,6 +49,12 @@ func Open(dbPath string) error {
 		if err != nil {
 			return err
 		}
+
+		_, err = t.CreateBucketIfNotExists(tagBucket)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 }
@@ -67,6 +84,55 @@ func CreateTask(t string) (Task, error) {
 		return task, err
 	}
 	return task, nil
+}
+
+func CreateTag(t string) (Tag, error) {
+	var tag Tag
+	err := db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(tagBucket)
+		id64, _ := b.NextSequence()
+		id := int(id64)
+		tag = Tag{
+			Key:   id,
+			Value: t,
+		}
+
+		value, err := json.Marshal(tag)
+		if err != nil {
+			return nil
+		}
+
+		return b.Put(itob(id), value)
+	})
+	return tag, err
+}
+
+func AddTaskToTag(taskID int, tagID int) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		taskBucket := tx.Bucket(taskBucket)
+		tagBucket := tx.Bucket(tagBucket)
+
+		taskBuf := taskBucket.Get(itob(taskID))
+		tagBuf := tagBucket.Get(itob(tagID))
+
+		if taskBuf != nil && tagBuf != nil {
+			var tag Tag
+			err := json.Unmarshal(tagBuf, &tag)
+			if err != nil {
+				return err
+			}
+
+			tag.AddTask(taskID)
+			buf, err := json.Marshal(tag)
+			if err != nil {
+				return err
+			}
+
+			return tagBucket.Put(itob(tagID), buf)
+		}
+
+		return nil
+	})
 }
 
 func DeleteTask(key int) error {
