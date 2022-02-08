@@ -84,6 +84,8 @@ func (m *model) setShowAddInput(b bool) bool {
 	if b {
 		m.addInput.CursorEnd()
 		m.addInput.Focus()
+	} else {
+		m.addInput.Reset()
 	}
 	m.delegate.SetIsAdding(b)
 	m.updateKeybindings()
