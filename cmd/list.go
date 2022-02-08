@@ -2,7 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"tsk/db"
+
+	"github.com/lorenries/tsk/db"
 
 	"github.com/mergestat/timediff"
 	"github.com/muesli/coral"

@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"tsk/cmd"
-	"tsk/db"
+
+	"github.com/lorenries/tsk/cmd"
+	"github.com/lorenries/tsk/db"
 
 	"github.com/mitchellh/go-homedir"
 )

@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"tsk/app"
-	"tsk/db"
+
+	"github.com/lorenries/tsk/app"
+	"github.com/lorenries/tsk/db"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/coral"

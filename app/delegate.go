@@ -3,12 +3,13 @@ package app
 import (
 	"fmt"
 	"io"
-	"tsk/db"
 
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/lorenries/tsk/db"
+
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/lorenries/bubbles/key"
-	"github.com/lorenries/bubbles/list"
 	"github.com/mergestat/timediff"
 	"github.com/muesli/reflow/truncate"
 )

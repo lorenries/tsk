@@ -3,7 +3,8 @@ package cmd
 import (
 	"fmt"
 	"strings"
-	"tsk/db"
+
+	"github.com/lorenries/tsk/db"
 
 	"github.com/muesli/coral"
 )

@@ -3,13 +3,14 @@ package app
 import (
 	"fmt"
 	"os"
-	"tsk/db"
 
+	"github.com/lorenries/tsk/db"
+
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/lorenries/bubbles/key"
-	"github.com/lorenries/bubbles/list"
-	"github.com/lorenries/bubbles/textinput"
 )
 
 var (
@@ -190,8 +191,8 @@ func NewModel(tasks []db.Task) model {
 	listKeys.acceptWhileAdding.SetEnabled(false)
 	taskList.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{
-			listKeys.cancelWhileAdding,
 			listKeys.acceptWhileAdding,
+			listKeys.cancelWhileAdding,
 		}
 	}
 
