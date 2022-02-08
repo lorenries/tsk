@@ -188,6 +188,23 @@ func AllTasks() ([]Task, error) {
 	return list(all)
 }
 
+func AllTags() ([]Tag, error) {
+	var tags []Tag
+	err := db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(tagBucket)
+		return b.ForEach(func(k, v []byte) error {
+			var tag Tag
+			err := json.Unmarshal(v, &tag)
+			if err != nil {
+				return err
+			}
+			tags = append(tags, tag)
+			return nil
+		})
+	})
+	return tags, err
+}
+
 func CompletedTasks() ([]Task, error) {
 	return list(done)
 }
