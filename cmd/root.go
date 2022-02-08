@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"tsk/app"
 	"tsk/db"
 
@@ -18,6 +19,9 @@ var rootCmd = &coral.Command{
 		if err != nil {
 			panic(err)
 		}
+		sort.Slice(tasks, func(i, j int) bool {
+			return tasks[i].TimeAdded.After(tasks[j].TimeAdded)
+		})
 		m := app.NewModel(tasks)
 		program := tea.NewProgram(m, tea.WithAltScreen())
 		if err := program.Start(); err != nil {
