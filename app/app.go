@@ -103,7 +103,9 @@ func (m *model) updateKeybindings() {
 	switch m.showAddInput {
 	case true:
 		m.keys.cancelWhileAdding.SetEnabled(true)
-		m.keys.acceptWhileAdding.SetEnabled(true)
+		if m.addInput.Value() != "" {
+			m.keys.acceptWhileAdding.SetEnabled(true)
+		}
 		m.keys.addItem.SetEnabled(false)
 		m.keys.togglePagination.SetEnabled(false)
 		m.delegateKeys.remove.SetEnabled(false)
@@ -160,6 +162,7 @@ func (m *model) handleAdding(msg tea.Msg) tea.Cmd {
 	newAddInput, inputCmd := m.addInput.Update(msg)
 	m.addInput = newAddInput
 	cmds = append(cmds, inputCmd)
+	m.updateKeybindings()
 
 	return tea.Batch(cmds...)
 }
