@@ -108,6 +108,7 @@ func (m *model) updateKeybindings() {
 		}
 		m.keys.addItem.SetEnabled(false)
 		m.keys.togglePagination.SetEnabled(false)
+		m.keys.toggleHelpMenu.SetEnabled(false)
 		m.delegateKeys.remove.SetEnabled(false)
 		m.delegateKeys.complete.SetEnabled(false)
 		m.list.KeyMap.ShowFullHelp.SetEnabled(false)
@@ -122,6 +123,7 @@ func (m *model) updateKeybindings() {
 	default:
 		m.keys.cancelWhileAdding.SetEnabled(false)
 		m.keys.acceptWhileAdding.SetEnabled(false)
+		m.keys.toggleHelpMenu.SetEnabled(true)
 		m.keys.addItem.SetEnabled(true)
 		m.keys.togglePagination.SetEnabled(true)
 		m.delegateKeys.remove.SetEnabled(true)
