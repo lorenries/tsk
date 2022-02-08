@@ -28,6 +28,16 @@ archives:
       windows: Windows
       386: i386
       amd64: x86_64
+brews:
+  - tap:
+      owner: lorenries
+      name: tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    commit_author:
+      name: "lorenries"
+      email: "lorenries@users.noreply.github.com"
+    homepage: "https://tsk.sh/"
+    description: "The dead-simple TUI to-do list"
 checksum:
   name_template: "checksums.txt"
 snapshot:
