@@ -10,16 +10,17 @@ import (
 	"github.com/muesli/termenv"
 )
 
-var (
+var listFlags struct {
 	allFlag, doneFlag, tagsFlag bool
-)
+	tagFlag                     string
+}
 
 // listCmd represents the list command
 var listCmd = &coral.Command{
 	Use:   "list",
 	Short: "Lists all of your tasks",
 	Run: func(cmd *coral.Command, args []string) {
-		if tagsFlag {
+		if listFlags.tagsFlag {
 			tags, err := db.AllTags()
 			if err != nil {
 				panic(err)
@@ -30,9 +31,9 @@ var listCmd = &coral.Command{
 		} else {
 			var tasks []db.Task
 			var err error
-			if allFlag == true {
+			if listFlags.allFlag == true {
 				tasks, err = db.AllTasks()
-			} else if doneFlag == true {
+			} else if listFlags.doneFlag == true {
 				tasks, err = db.CompletedTasks()
 			} else {
 				tasks, err = db.ActiveTasks()
@@ -57,8 +58,9 @@ var listCmd = &coral.Command{
 }
 
 func init() {
-	listCmd.Flags().BoolVarP(&allFlag, "all", "a", false, "List active and completed tasks")
-	listCmd.Flags().BoolVarP(&doneFlag, "done", "d", false, "List completed tasks only")
-	listCmd.Flags().BoolVarP(&tagsFlag, "tags", "t", false, "List tags")
+	listCmd.Flags().BoolVarP(&listFlags.allFlag, "all", "a", false, "List active and completed tasks")
+	listCmd.Flags().BoolVarP(&listFlags.doneFlag, "done", "d", false, "List completed tasks only")
+	listCmd.Flags().BoolVar(&listFlags.tagsFlag, "tags", false, "List all tags")
+	listCmd.Flags().StringVarP(&listFlags.tagFlag, "tag", "t", "", "List tasks for a given tag")
 	rootCmd.AddCommand(listCmd)
 }

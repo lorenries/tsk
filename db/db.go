@@ -19,6 +19,11 @@ type Task struct {
 	Value     string    `json:"value"`
 	TimeAdded time.Time `json:"timeAdded"`
 	Completed bool      `json:"completed"`
+	Tags      []int     `json:"tags"`
+}
+
+func (t *Task) AddTag(id int) {
+	t.Tags = append(t.Tags, id)
 }
 
 type Tag struct {
@@ -133,6 +138,39 @@ func AddTaskToTag(taskID int, tagID int) error {
 
 		return nil
 	})
+}
+
+func GetTasksForTag(tagID int) ([]Task, error) {
+	var tasks []Task
+
+	err := db.View(func(tx *bolt.Tx) error {
+		tagBucket := tx.Bucket(tagBucket)
+		taskBucket := tx.Bucket(taskBucket)
+
+		tagBuf := tagBucket.Get(itob(tagID))
+		if tagBuf != nil {
+			var tag Tag
+			err := json.Unmarshal(tagBuf, &tag)
+			if err != nil {
+				return err
+			}
+
+			for _, taskID := range tag.Tasks {
+				var task Task
+				taskBuf := taskBucket.Get(itob(taskID))
+				if taskBuf != nil {
+					err := json.Unmarshal(taskBuf, &task)
+					if err != nil {
+						return err
+					}
+					tasks = append(tasks, task)
+				}
+			}
+		}
+		return nil
+	})
+
+	return tasks, err
 }
 
 func DeleteTask(key int) error {

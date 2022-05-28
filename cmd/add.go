@@ -9,15 +9,16 @@ import (
 	"github.com/muesli/coral"
 )
 
-var tagFlag bool
+var tagFlag string
 
 // addCmd represents the add command
 var addCmd = &coral.Command{
 	Use:   "add",
 	Short: "Adds a task to your to-do list",
+	Args:  coral.MinimumNArgs(1),
 	Run: func(cmd *coral.Command, args []string) {
 		input := strings.Join(args, " ")
-		if tagFlag {
+		if tagFlag != "" {
 			tag, err := db.CreateTag(input)
 			if err != nil {
 				panic(err)
@@ -34,6 +35,6 @@ var addCmd = &coral.Command{
 }
 
 func init() {
-	addCmd.Flags().BoolVarP(&tagFlag, "tag", "t", false, "Adds a new tag")
+	addCmd.Flags().StringVarP(&tagFlag, "tag", "t", "", "Adds a new task with the specified tag")
 	rootCmd.AddCommand(addCmd)
 }
